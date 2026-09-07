@@ -2,6 +2,9 @@
 
 FileWatcher = FileWatcher or class()
 
+local ATTR_SIZE = 0
+local ATTR_CTIME = 1
+local ATTR_MTIME = 2
 function FileWatcher:init(opt)
     self._files = {}
     self._folders = {}
@@ -26,7 +29,7 @@ function FileWatcher:init(opt)
 end
 
 function FileWatcher:WatchFile(file)
-    self._files[file] = lfs.attributes(file, "modification")
+    self._files[file] = BLEP.get_file_attribute(file, ATTR_MTIME)
 end
 
 function FileWatcher:UnwatchFile(file)
@@ -41,7 +44,7 @@ function FileWatcher:CollectFilesAndFolders(path)
         
         for _, folder in pairs(FileIO:GetFolders(path)) do
             local full_path = path.."/"..folder
-            self._folders[full_path] = lfs.attributes(full_path, "modification")
+            self._folders[full_path] = BLEP.get_file_attribute(full_path, ATTR_MTIME)
             self:CollectFilesAndFolders(full_path)
         end
     end
@@ -51,7 +54,7 @@ function FileWatcher:Update(t, dt)
     if not self._next_scan or t >= self._next_scan then
         if not self._dont_scan_files then
             for file, mod in pairs(self._files) do
-                local last_mod = lfs.attributes(file, "modification")
+                local last_mod = BLEP.get_file_attribute(file, ATTR_MTIME)
                 if mod ~= last_mod then
                     self._callback(file)
                     self._files[file] = last_mod
@@ -64,7 +67,7 @@ function FileWatcher:Update(t, dt)
         local first
         if not self._dont_scan_folders then
             for file, mod in pairs(self._folders) do
-                if mod ~= lfs.attributes(file, "modification") then
+                if mod ~= BLEP.get_file_attribute(file, ATTR_MTIME) then
                     if (not self._folder_callback or self._folder_callback(file, true) ~= false) and not self._dont_rescan_files then
                         if not first then
                             self._files = {}
