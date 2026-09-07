@@ -32,7 +32,7 @@ function Editor:init(data)
 	self._camera_rot = self._camera_object:rotation()
     self._editor_all = World:make_slot_mask(1, 10, 11, 15, 19, 29, 34, 35, 36, 37, 38, 39)
     self._go_through_units_before_simulaton_mask = World:make_slot_mask(1, 11, 17, 19, 32, 36, 38)
-	self._con = managers.menu._controller
+    self._con = managers.controller:create_controller("MapEditor", nil, true)
     self._move_widget = CoreEditorWidgets.MoveWidget:new(self)
     self._rotate_widget = CoreEditorWidgets.RotationWidget:new(self)
     self._hidden_units = {}
@@ -577,12 +577,14 @@ function Editor:set_enabled(enabled)
     self._enabled = enabled
     if enabled then
         self._menu:Enable()
+        self._con:enable()
         managers.hud:set_disabled()
         self:sound_check_object_active(true)
         self:set_listener_active(true)
         self:set_wanted_mute(true)
     else
         self._menu:Disable()
+        self._con:disable()
         managers.hud:set_enabled()
         self:sound_check_object_active(false)
         self:set_listener_active(false)
@@ -799,6 +801,10 @@ function Editor:set_unit_visible(unit, visible)
 end
 
 function Editor:destroy()
+    if self._con then
+        self._con:destroy()
+        self._con = nil
+    end
     Application:set_force_editor_physics_bodies(false)
     local scroll_y_tbl = {}
     for name, manager in pairs(self.parts) do
