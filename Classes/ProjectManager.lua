@@ -378,7 +378,13 @@ function ProjectManager:create_new_cloned_map()
             BLE.ListDialog:hide()
             self:create_new_map_dialog(function(name)
                 self:create_new_map_clean(name)
-                ProjectNarrativeEditor:new(self._project, nil, table.merge({clone_id = selection.id, name = name}))
+                ProjectNarrativeEditor:new(self._project, nil, {clone_id = selection.id, name = name, final_callback = function(success)
+                    if success then
+                        self:load_mods()
+                    else
+                        self._project:reload_mod()
+                    end
+                end})
             end)
         end
     })
