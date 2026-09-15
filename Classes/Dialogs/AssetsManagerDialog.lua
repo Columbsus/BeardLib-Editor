@@ -387,7 +387,7 @@ function AssetsManagerDialog:clean_add_xml()
 end
 
 function AssetsManagerDialog:db_has_asset(ext, asset)
-    return DB:has(asset, ext)
+    return DB:has(ext, asset)
 end
 
 function AssetsManagerDialog:quick_load_from_db(ext, asset, clbk, exclude, extra_info)
@@ -459,7 +459,7 @@ function AssetsManagerDialog:_load_from_db(config, inc_in_proj, dontask, failed_
                         table.insert(to_copy, {path = name, type = typ})
                     end
                     for _, as in pairs(to_copy) do
-                        local read_data = DB:open(as.path, as.type)
+                        local read_data = DB:open(as.type, as.path)
                         FileIO:WriteTo(Path:Combine(assets_dir, as.path.."."..as.type), read_data)
                     end
                 end

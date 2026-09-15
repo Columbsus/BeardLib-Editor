@@ -392,8 +392,8 @@ function BLE:GenerateBrushData()
         "units/pd2_dlc_bph/props/bph_prop_bloodsplatter/bph_prop_blood_handprint_05"
     }
     for unit in pairs(BLE.DBPaths.unit) do
-        if unit:match("brush") and DB:has(unit, "unit") then
-            local read = DB:open(unit, "unit")
+        if unit:match("brush") and DB:has("unit", unit) then
+            local read = DB:open("unit", unit)
             if read then
                 if read:match('type="brush" slot="29"') then
                     table.insert(brush_units, unit)

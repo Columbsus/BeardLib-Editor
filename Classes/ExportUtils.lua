@@ -77,7 +77,7 @@ function Utils:AssetExists(ext, path, lang)
         end
     end
 
-    return DB:has(path, ext, {language = lang}), FROM_DB
+    return DB:has(ext, path, {language = lang}), FROM_DB
 end
 
 function Utils:ParseXml(ext, path, scriptdata)

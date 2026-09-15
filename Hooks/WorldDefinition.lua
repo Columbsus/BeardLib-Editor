@@ -687,7 +687,7 @@ function WorldDef:make_unit(data, offset)
 		else
 			local failed = false
 			if not PackageManager:has(unit_ids, Idstring(name)) then
-				if DB:has(name, "unit") then
+				if DB:has("unit", name) then
 					table.insert(self._werent_loaded, name)
 					managers.editor.parts.assets:quick_load_from_db("unit", name)
 				else
