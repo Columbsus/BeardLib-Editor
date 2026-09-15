@@ -393,7 +393,7 @@ function BLE:GenerateBrushData()
     }
     for unit in pairs(BLE.DBPaths.unit) do
         if unit:match("brush") and DB:has("unit", unit) then
-            local read = DB:open("unit", unit)
+            local read = BLE.Utils:GetContentsFromDB("unit", unit)
             if read then
                 if read:match('type="brush" slot="29"') then
                     table.insert(brush_units, unit)

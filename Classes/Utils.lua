@@ -376,6 +376,10 @@ function Utils:ParseXmlFromAssets(typ, path, scriptdata, assets_dir)
     end
 end
 
+function Utils:GetContentsFromDB(typ, path)
+    return DB:open(typ, path):read("a")
+end
+
 function Utils:ParseXml(typ, path, scriptdata)
     if not DB:has(typ, path) then
         local asset = BeardLibFileManager:Get(typ, path)
@@ -384,9 +388,9 @@ function Utils:ParseXml(typ, path, scriptdata)
         end
     else
         if scriptdata then
-            return FileIO:ConvertScriptData(DB:open(typ, path), "binary")
+            return FileIO:ConvertScriptData(self:GetContentsFromDB(typ, path), "binary")
         else
-            return Node.from_xml(DB:open(typ, path))
+            return Node.from_xml(self:GetContentsFromDB(typ, path))
         end
     end
 end

@@ -431,7 +431,7 @@ function MaterialEditor:_load_shader_dropdown()
 	self._shader_defines = {}
 	self._template_params = {}
 	if DB:has("render_template_database", self.RENDER_TEMPLATE_DATABASE_PATH) then
-		local database = DB:open("render_template_database", self.RENDER_TEMPLATE_DATABASE_PATH)
+		local database = BLE.Utils:GetContentsFromDB("render_template_database", self.RENDER_TEMPLATE_DATABASE_PATH)
 		database = database and ScriptSerializer:from_custom_xml(database)
 		if database and database.render_templates then
 			for _, template in ipairs(database.render_templates) do

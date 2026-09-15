@@ -459,7 +459,7 @@ function AssetsManagerDialog:_load_from_db(config, inc_in_proj, dontask, failed_
                         table.insert(to_copy, {path = name, type = typ})
                     end
                     for _, as in pairs(to_copy) do
-                        local read_data = DB:open(as.type, as.path)
+                        local read_data = BLE.Utils:GetContentsFromDB(as.type, as.path)
                         FileIO:WriteTo(Path:Combine(assets_dir, as.path.."."..as.type), read_data)
                     end
                 end
