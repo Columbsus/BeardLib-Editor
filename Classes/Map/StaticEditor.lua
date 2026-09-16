@@ -382,6 +382,7 @@ function Static:build_unit_editor_menu()
     self:build_positions_items()
     self:build_extension_items()
     self:build_physics_items()
+    self:build_repeat_mesh_variation()
     self:build_animated_vehicle_items()
 end
 
@@ -1862,6 +1863,33 @@ function Static:remove_polyline()
 
 		self._polyline = nil
 	end
+end
+
+function Static:has_sequence_manager()
+    local has_seq_manager = false
+    local unit = self:selected_unit()
+    if unit:damage() then
+        has_seq_manager = true
+    end
+    return has_seq_manager
+end
+
+function Static:build_repeat_mesh_variation()
+    if not self:has_sequence_manager() then
+        return
+    end
+
+    local quick = self:GetItem("QuickActions")
+    quick:s_btn("RepeatMeshVariation", ClassClbk(self, "repeat_mesh_variation"), {size_by_text = true, help = "Run the currently selected Mesh Variation again."})
+end
+
+function Static:repeat_mesh_variation()
+    local unit = self:selected_unit()
+    local ud = unit:unit_data()
+    local mesh_variation = ud.mesh_variation
+    if unit:damage() and unit:damage():has_sequence(mesh_variation) then
+        unit:damage():run_sequence_simple(mesh_variation)
+    end
 end
 
 function Static:is_vehicle()
