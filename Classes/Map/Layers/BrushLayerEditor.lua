@@ -59,20 +59,20 @@ function BrushLayerEditor:save()
 		FileIO:CopyFile(Path:Combine(BLE.MapProject._templates_directory, "Level/massunit.massunit"), massunit_path)
 	end
 
-	local massunit = {path = Path:Combine(Application:base_path(), massunit_path), units = {}}
+	local massunit = {}
 
 	-- Add anything that was already in the massunit manager
 	for _, unit_name in ipairs(MassUnitManager:list()) do
 		local rotations = MassUnitManager:unit_rotations(unit_name)
 		local positions = MassUnitManager:unit_positions(unit_name)
 
-		local clean_positions = {}
-		local clean_rotations = {}
-		for _, pos in pairs(positions) do
-			table.insert(clean_positions, {pos.x, pos.y, pos.z})
-		end
-		for _, rot in pairs(rotations) do
-			table.insert(clean_rotations, math.rot_to_quat(rot))
+		local instance_data = {}
+
+		for i, pos in pairs(positions) do
+			table.insert(instance_data, {
+				pos = {pos.x, pos.y, pos.z},
+				rot = math.rot_to_quat(rotations[i])
+			})
 		end
 
 		local unhashed = BLE.Utils:Unhash(unit_name, "unit")
@@ -82,10 +82,10 @@ function BrushLayerEditor:save()
 			table.insert(data.brush.preload_units, unit_name)
 		end
 
-		table.insert(massunit.units, {
-			path = unit_name:key(),
-			positions = clean_positions,
-			rotations = clean_rotations
+		table.insert(massunit, {
+			unit_type = unit_name:key(),
+			pool_size = #instance_data,
+			instance_data = instance_data
 		})
 	end
 
@@ -93,21 +93,22 @@ function BrushLayerEditor:save()
 	for _, header in pairs(self._brush_types) do
 		header:check_alive_units()
 
-		local clean_positions = {}
-		local clean_rotations = {}
+		local instance_data = {}
 		for _, unit in pairs(header._units) do
 			local pos = unit:position()
 			local rot = unit:rotation()
 
-			table.insert(clean_positions, {pos.x, pos.y, pos.z})
-			table.insert(clean_rotations, math.rot_to_quat(rot))
+			table.insert(instance_data, {
+				pos = {pos.x, pos.y, pos.z},
+				rot = math.rot_to_quat(rot)
+			})
 		end
 
 		table.insert(data.brush.preload_units, header._name)
-		table.insert(massunit.units, {
-			path = header._name:key(),
-			positions = clean_positions,
-			rotations = clean_rotations
+		table.insert(massunit, {
+			unit_type = header._name:key(),
+			pool_size = #instance_data,
+			instance_data = instance_data
 		})
 	end
 
@@ -115,7 +116,10 @@ function BrushLayerEditor:save()
 	local temp_massunit = Path:Combine(tools_path, "Temp/massunit.json")
 	FileIO:WriteTo(temp_massunit, json.encode(massunit), "w")
 
-	os.execute('start /min '..Path:Combine(tools_path, "MassunitMaker.exe"))
+	os.execute('start /min '..Path:Combine(tools_path, "MassunitMaker.exe")
+		..' "'..temp_massunit..'" '
+		..'"'..Path:Combine(Application:base_path(), massunit_path)..'"'
+	)
 end
 
 function BrushLayerEditor:unit_positions(name)
