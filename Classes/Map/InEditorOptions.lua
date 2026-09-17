@@ -297,8 +297,8 @@ The editor will now use this format and any old map will need to be converted. C
     local cusxml = save_in_binary and "binary" or "custom_xml"
     local include = {
         {_meta = "world", path = "world", script_data_type = xml},
-        {_meta = "continents", path = "continents", script_data_type = cusxml},
-        {_meta = "mission", path = "mission", script_data_type = cusxml},
+        {_meta = "continents", path = "continents", script_data_type = xml},
+        {_meta = "mission", path = "mission", script_data_type = xml},
         {_meta = "nav_data", path = "nav_manager_data", script_data_type = xml},
         {_meta = "world_sounds", path = "world_sounds", script_data_type = xml},
         {_meta = "world_cameras", path = "world_cameras", script_data_type = xml},
@@ -354,13 +354,13 @@ The editor will now use this format and any old map will need to be converted. C
         end
 
         local continents = BeardLib.Utils:RemoveMetas(deep_clone(worlddef._continents))
-        if cusxml == "custom_xml" then --Fix for custom xml ruining the id if its higher than 1000000
-            for _, data in pairs(continents) do
-                data.base_id = tostring(data.base_id)
-            end
-        end
-        self:SaveData(map_path, "continents.continents", FileIO:ConvertToScriptData(continents, cusxml))
-        self:SaveData(map_path, "mission.mission", FileIO:ConvertToScriptData(missions, cusxml))
+        -- if cusxml == "custom_xml" then --Fix for custom xml ruining the id if its higher than 1000000
+        --     for _, data in pairs(continents) do
+        --         data.base_id = tostring(data.base_id)
+        --     end
+        -- end
+        self:SaveData(map_path, "continents.continents", FileIO:ConvertToScriptData(continents, xml))
+        self:SaveData(map_path, "mission.mission", FileIO:ConvertToScriptData(missions, xml))
         self:SaveData(map_path, "world_sounds.world_sounds", FileIO:ConvertToScriptData(worlddef._sound_data or {}, xml))
 
         managers.worldcamera:save()
