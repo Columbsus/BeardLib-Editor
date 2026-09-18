@@ -9,15 +9,15 @@ function AiEditor:init(parent)
 
     self._draw_helpers = {
         { name = "segments", text = "Segments", enabled = true },
-        { name = "quads", text = "Quads" },
-        { name = "doors", text = "Doors" },
-        { name = "coarse_graph", text = "Coarse Graph" },
         { name = "obstacles", text = "Obstacles" },
-        { name = "nav_links", text = "Navigation Links" },
-        { name = "covers", text = "Covers" },
-        { name = "pos_rsrv", text = "Pos Reservations" },
-        { name = "blockers", text = "Splitters", needs_unit = true },
-        { name = "vis_graph", text = "Vis Graph", needs_unit = true }
+        -- { name = "quads", text = "Quads" },
+        -- { name = "doors", text = "Doors" },
+        -- { name = "coarse_graph", text = "Coarse Graph" },
+        -- { name = "nav_links", text = "Navigation Links" },
+        -- { name = "covers", text = "Covers" },
+        -- { name = "pos_rsrv", text = "Pos Reservations" },
+        -- { name = "blockers", text = "Splitters", needs_unit = true },
+        -- { name = "vis_graph", text = "Vis Graph", needs_unit = true }
     }
 
     self._brush = Draw:brush()
