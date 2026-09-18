@@ -462,17 +462,14 @@ function Options:save_nav_data(include, skip_restart)
     local path = self:map_world_path()
     local had_include = not not include
     include = include or {}
-    local save_data = managers.navigation:get_save_data()
+    managers.navigation:_create_load_data_from_builder()
+    local save_data = managers.navigation._load_data or { version = NavFieldBuilder._VERSION }
     local save_in_binary = self:Val("SaveMapFilesInBinary")
     local typ = save_in_binary and "binary" or "generic_xml"
-    if save_data then
-        table.insert(include, {_meta = "nav_data", path = "nav_manager_data", script_data_type = typ})
-        --This sucks
-        self:SaveData(path, "nav_manager_data.nav_data", save_in_binary and FileIO:ConvertToScriptData(FileIO:ConvertScriptData(save_data, "generic_xml"), typ) or save_data)
-    else
-        BLE.Utils:Notify("Save data is not ready yet")
-        return
-    end
+
+    table.insert(include, {_meta = "nav_data", path = "nav_manager_data", script_data_type = typ})
+    self:SaveData(path, "nav_manager_data.nav_data", FileIO:ConvertToScriptData(save_data, typ))
+
     if not had_include then
         self:save_local_add_xml(include)
         if not skip_restart then

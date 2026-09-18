@@ -2,127 +2,78 @@ if not Global.editor_mode then
 	return
 end
 
-local mvec3_cpy = mvector3.copy
-function NavigationManager:init()
-	self._debug = SystemInfo:platform() == Idstring("WIN32")
-	self._builder = NavFieldBuilder:new()
-	self._get_room_height_at_pos = self._builder._get_room_height_at_pos
-	self._check_room_overlap_bool = self._builder._check_room_overlap_bool
-	self._door_access_types = self._builder._door_access_types
-	self._opposite_side_str = self._builder._opposite_side_str
-	self._perp_pos_dir_str_map = self._builder._perp_pos_dir_str_map
-	self._perp_neg_dir_str_map = self._builder._perp_neg_dir_str_map
-	self._dim_str_map = self._builder._dim_str_map
-	self._perp_dim_str_map = self._builder._perp_dim_str_map
-	self._neg_dir_str_map = self._builder._neg_dir_str_map
-	self._x_dir_str_map = self._builder._x_dir_str_map
-	self._dir_str_to_vec = self._builder._dir_str_to_vec
-	self._geog_segment_size = self._builder._geog_segment_size
-	self._grid_size = self._builder._grid_size
-	self._rooms = {}
-	self._room_doors = {}
-	self._geog_segments = {}
-	self._nr_geog_segments = nil
-	self._visibility_groups = {}
-	self._nav_segments = {}
-	self._coarse_searches = {}
+Hooks:PostHook(NavigationManager, "init", "BLENavManagerInit", function(self)
+	self._debug = true
 	self:set_debug_draw_state(true)
-	self._covers = {}
-	self._next_pos_rsrv_expiry = false
-	if self._debug then
-		self._nav_links = {}
-	end
-	self._quad_field = World:quad_field()
-	self._quad_field:set_nav_link_filter(NavigationManager.ACCESS_FLAGS)
-	self._pos_rsrv_filters = {}
-	self._obstacles = {}
-	if self._debug then
-		self._pos_reservations = {}
-	end
-end
+end)
 
 function NavigationManager:update(t, dt)
 	if self._debug then
 		self._builder:update(t, dt)
-		if self._draw_enabled then
+
+		if self._debug_draw_options then
 			local options = self._draw_enabled
 			local data = self._draw_data
 			if data and type(options) == "table" then
-				local progress = self._use_fast_drawing and 1 or math.clamp((t - data.start_t) / (data.duration * 0.5), 0, 1)
-                if options.quads then
-                    self:_draw_rooms(progress)
-                end
-                if options.doors then
-                    self:_draw_doors(progress)
-                end
-                if options.blockers then
-                    self:_draw_nav_blockers()
-                end
+				local options = self._debug_draw_options
+
+				if options.blockers then
+					self:_draw_nav_blockers()
+				end
+
+				-- Added by BLE
 				if options.obstacles then
                     self:_draw_nav_obstacles()
                 end
-                if options.vis_graph then
-                    self:_draw_visibility_groups(progress)
-                end
-                if options.coarse_graph then
-                    self:_draw_coarse_graph()
-                end
-                if options.nav_links then
-                    self:_draw_anim_nav_links()
-                end
-                if options.covers then
-                    self:_draw_covers()
-                end
-				if options.pos_rsrv then
-					self:_draw_pos_reservations(t)
+
+				if options.covers then
+					self:_draw_covers()
 				end
-				if not self._use_fast_drawing and progress == 1 then
-					self._draw_data.start_t = t
+
+				if options.pos_reservations then
+					self:_draw_pos_reservations(t)
 				end
 			end
 		end
 	end
+
 	self:_commence_coarce_searches(t)
 end
 
 function NavigationManager:_init_draw_data()
-	local data = {}
-	local duration = not self._use_fast_drawing and 10 or nil
-	data.duration = duration
-	local brush = {
-		door = Draw:brush(Color(0.1, 0, 1, 1), duration),
-		room_diag = Draw:brush(Color(1, 0.5, 0.5, 0), duration),
-		room_diag_disabled = Draw:brush(Color(0.5, 0.7, 0, 0), duration),
-		room_diag_obstructed = Draw:brush(Color(0.5, 0.5, 0, 0.5), duration),
-		room_border = Draw:brush(Color(0, 0.3, 0.3, 0.8), duration),
-		room_fill = Draw:brush(Color(0.3, 0.3, 0.3, 0.8), duration),
-		room_fill_disabled = Draw:brush(Color(0.3, 0.8, 0.3, 0.3), duration),
-		room_fill_obstructed = Draw:brush(Color(0.3, 0.8, 0, 0.8), duration),
-		coarse_graph = Draw:brush(Color(0.2, 0.9, 0.9, 0.2)),
-		vis_graph_rooms = Draw:brush(Color(0.6, 0.5, 0.2, 0.9), duration),
-		vis_graph_node = Draw:brush(Color(1, 0.6, 0, 0.9), duration),
-		vis_graph_links = Draw:brush(Color(0.2, 0.8, 0.1, 0.6), duration),
-		obstacles = Draw:brush(Color(0.3, 1, 0, 1)),
-		blocked = Draw:brush(Color(1, 1, 1, 1))
-	}
+	local duration = not self._use_fast_drawing and 5 or nil
 
-	brush.blocked:set_font(Idstring("fonts/font_medium"), 30)
-
-	data.brush = brush
-	local offsets = {
-		Vector3(-1, -1),
-		Vector3(-1, 1),
-		Vector3(1, -1),
-		Vector3(1, 1)
+	self._draw_data = {
+		next_draw_i_coarse = 1,
+		next_draw_i_door = 1,
+		next_draw_i_room = 1,
+		next_draw_i_vis = 1,
+		duration = duration,
+		brush = {
+			door = Draw:brush(Color(0.1, 0, 1, 1), duration),
+			room_diag = Draw:brush(Color(1, 0.5, 0.5, 0), duration),
+			room_diag_disabled = Draw:brush(Color(0.5, 0.7, 0, 0), duration),
+			room_diag_obstructed = Draw:brush(Color(0.5, 0.5, 0, 0.5), duration),
+			room_border = Draw:brush(Color(0.5, 0.3, 0.3, 0.8), duration),
+			coarse_graph = Draw:brush(Color(0.2, 0.05, 0.2, 0.9)),
+			vis_graph_rooms = Draw:brush(Color(0.6, 0.5, 0.2, 0.9), duration),
+			vis_graph_node = Draw:brush(Color(1, 0.6, 0, 0.9), duration),
+			vis_graph_links = Draw:brush(Color(0.2, 0.8, 0.1, 0.6), duration),
+			pos_rsvr_unit = Draw:brush(Color(1, 1, 0, 0)),
+			pos_rsvr = Draw:brush(Color(0.3, 1, 1, 0)),
+			nav_blocker = Draw:brush(Color(0.1, 1, 0, 0)),
+			nav_blocker_help = Draw:brush(Color(0.1, 0, 1, 0))
+		},
+		offsets = {
+			Vector3(-1, -1),
+			Vector3(-1, 1),
+			Vector3(1, -1),
+			Vector3(1, 1)
+		}
 	}
-	data.offsets = offsets
-	data.next_draw_i_room = 1
-	data.next_draw_i_door = 1
-	data.next_draw_i_coarse = 1
-	data.next_draw_i_vis = 1
-	self._draw_data = data
 end
 
+--TODO look into updating this into the latest (support self._selected_segment_id)
 function NavigationManager:set_debug_draw_state(options)
     local temp = {}
 	local fast_drawing = true
@@ -152,18 +103,42 @@ function NavigationManager:set_debug_draw_state(options)
 end
 
 function NavigationManager:build_complete_clbk(draw_options)
-	self:_refresh_data_from_builder()
+	if self._builder:is_data_complete() then
+		self:_create_load_data_from_builder()
+
+		BLE:log("Navigation data Progress: Done!")
+
+		local data = self._load_data
+
+		if data.version < 6 then
+			BLE:log("Navigation data Progress: Converting to V6 format")
+
+			data = self:_convert_nav_data_v5_to_v6(self._load_data)
+		end
+
+		self:_load_nav_data(data)
+		self._quad_field:clear_all()
+
+		local setup_data = {
+			quad_grid_size = self._grid_size,
+			sector_grid_size = self._sector_grid_size
+		}
+
+		self._quad_field:setup(setup_data, callback(self, self, "clbk_navfield"))
+		self._quad_field:set_nav_link_filter(NavigationManager.ACCESS_FLAGS)
+		-- self:_send_nav_field_to_engine(data) This was absent from BLE, possibly caused issues. If this can be uncommented we can probably remove this function
+		self:_resolve_segment_neighbours()
+	end
+
 	self:set_debug_draw_state(draw_options)
-	if self:is_data_ready() then
-		self._load_data = self:get_save_data()
-        local c = BLE.Utils:GetPart("opt")
-        BLE:log("Navigation data Progress: Done!")
-    end
+
 	if self._build_complete_clbk then
 		self._build_complete_clbk()
 	end
+
 	BLE.Utils:GetLayer("ai"):reenable_disabled_units()
 end
+
 
 local search = NavigationManager.search_coarse
 function NavigationManager:search_coarse( ... )
