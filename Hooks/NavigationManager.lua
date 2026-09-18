@@ -102,43 +102,13 @@ function NavigationManager:set_debug_draw_state(options)
     self._draw_enabled = options
 end
 
-function NavigationManager:build_complete_clbk(draw_options)
-	if self._builder:is_data_complete() then
-		self:_create_load_data_from_builder()
+Hooks:PreHook(NavigationManager, "build_complete_clbk", "BLENavManagerPreBuildCompleteClbk", function(self)
+	BLE:log("Navigation data Progress: Done!")
+end)
 
-		BLE:log("Navigation data Progress: Done!")
-
-		local data = self._load_data
-
-		if data.version < 6 then
-			BLE:log("Navigation data Progress: Converting to V6 format")
-
-			data = self:_convert_nav_data_v5_to_v6(self._load_data)
-		end
-
-		self:_load_nav_data(data)
-		self._quad_field:clear_all()
-
-		local setup_data = {
-			quad_grid_size = self._grid_size,
-			sector_grid_size = self._sector_grid_size
-		}
-
-		self._quad_field:setup(setup_data, callback(self, self, "clbk_navfield"))
-		self._quad_field:set_nav_link_filter(NavigationManager.ACCESS_FLAGS)
-		-- self:_send_nav_field_to_engine(data) This was absent from BLE, possibly caused issues. If this can be uncommented we can probably remove this function
-		self:_resolve_segment_neighbours()
-	end
-
-	self:set_debug_draw_state(draw_options)
-
-	if self._build_complete_clbk then
-		self._build_complete_clbk()
-	end
-
+Hooks:PostHook(NavigationManager, "build_complete_clbk", "BLENavManagerPostBuildCompleteClbk", function(self)
 	BLE.Utils:GetLayer("ai"):reenable_disabled_units()
-end
-
+end)
 
 local search = NavigationManager.search_coarse
 function NavigationManager:search_coarse( ... )
@@ -185,4 +155,9 @@ function NavigationManager:_draw_nav_obstacles()
 			end
 		end
 	end
-end 
+end
+
+Hooks:PreHook(NavigationManager, "set_load_data", "BLENavManagerPreSetLoadData", function(self, data)
+	self._load_data = deep_clone(data)
+	self._builder:load(self._load_data)
+end)
