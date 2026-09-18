@@ -10,14 +10,15 @@ function AiEditor:init(parent)
     self._draw_helpers = {
         { name = "segments", text = "Segments", enabled = true },
         { name = "obstacles", text = "Obstacles" },
-        -- { name = "quads", text = "Quads" },
-        -- { name = "doors", text = "Doors" },
-        -- { name = "coarse_graph", text = "Coarse Graph" },
+        { name = "quads", text = "Quads" },
+        { name = "doors", text = "Doors" },
+        { name = "coarse_graph", text = "Coarse Graph" },
         -- { name = "nav_links", text = "Navigation Links" },
-        -- { name = "covers", text = "Covers" },
+        { name = "covers", text = "Covers" },
+        { name = "sectors", text = "Sectors" },
         -- { name = "pos_rsrv", text = "Pos Reservations" },
-        -- { name = "blockers", text = "Splitters", needs_unit = true },
-        -- { name = "vis_graph", text = "Vis Graph", needs_unit = true }
+        { name = "blockers", text = "Splitters", needs_unit = true },
+        { name = "vis_graph", text = "Vis Graph", needs_unit = true }
     }
 
     self._brush = Draw:brush()
@@ -422,7 +423,7 @@ end
 function AiEditor:update_draw_data(unit)
     if not alive(unit) or unit:name() == self._nav_surface_unit then
         managers.navigation:set_selected_segment(unit)
-        managers.navigation:set_debug_draw_state(self._draw_options)
+        self:set_debug_draw_state()
     end
 
     if not self._draw_options then
@@ -621,8 +622,18 @@ function AiEditor:_draw_nav_segments(item)
     if item:Name() == "UseFastDrawing" then
         self:set_value("FastAIDrawing", item:Value())
     end
+
+    self:set_debug_draw_state()
+end
+
+function AiEditor:set_debug_draw_state()
+    local options = {}
+    for name, item in pairs(self._draw_options) do
+        options[name] = item:Value()
+    end
+
     if managers.navigation then
-        managers.navigation:set_debug_draw_state(self._draw_options)
+        managers.navigation:set_debug_draw_state(options)
     end
 end
 
