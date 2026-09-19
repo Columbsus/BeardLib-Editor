@@ -145,6 +145,7 @@ function CubemapCreator:create_projection_light(type)
 end
 
 function CubemapCreator:create_cube_map(params)
+	local fov = self._parent:camera_fov()
 	self._parent:set_camera_fov(500)
 	self:viewport():set_width_mul_enabled(false)
 
@@ -163,7 +164,7 @@ function CubemapCreator:create_cube_map(params)
 		aspect_ratio = self._saved_resolution.x / self._saved_resolution.y,
 		pos = self._camera:position(),
 		rot = self._camera:rotation(),
-		fov = self._parent:camera_fov(),
+		fov = fov,
 		near_range = self._camera:near_range(),
 		far_range = self._camera:far_range()
 	}
