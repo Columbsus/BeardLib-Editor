@@ -462,8 +462,8 @@ function Options:save_nav_data(include, skip_restart)
     local path = self:map_world_path()
     local had_include = not not include
     include = include or {}
-    managers.navigation:_create_load_data_from_builder()
     local save_data = managers.navigation._load_data or { version = NavFieldBuilder._VERSION }
+
     local save_in_binary = self:Val("SaveMapFilesInBinary")
     local typ = save_in_binary and "binary" or "generic_xml"
 
