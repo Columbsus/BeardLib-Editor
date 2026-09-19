@@ -470,7 +470,7 @@ function NavigationManager:_draw_room(room, instant)
 		for dir_str, seg_list in pairs(room.expansion_segments) do
 			local color, rad
 
-			if self._neg_dir_str_map[dir_str] then
+			if self._builder._neg_dir_str_map[dir_str] then
 				rad = 3.5
 				color = Vector3(0.5, 0.5, 0.5)
 			else
@@ -488,7 +488,7 @@ function NavigationManager:_draw_room(room, instant)
 		for side, neighbour_list in pairs(room.neighbours) do
 			local color, rad
 
-			if self._neg_dir_str_map[side] then
+			if self._builder._neg_dir_str_map[side] then
 				rad = 3.2
 				color = Vector3(0, 0.5, 0.5)
 			else
