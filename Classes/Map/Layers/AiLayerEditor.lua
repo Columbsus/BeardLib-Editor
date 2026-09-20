@@ -13,10 +13,10 @@ function AiEditor:init(parent)
         { name = "quads", text = "Quads" },
         { name = "doors", text = "Doors" },
         { name = "coarse_graph", text = "Coarse Graph" },
-        -- { name = "nav_links", text = "Navigation Links" },
+        { name = "nav_links", text = "Navigation Links" },
+        { name = "boundaries", text = "Boundaries" },
         { name = "covers", text = "Covers" },
-        { name = "sectors", text = "Sectors" },
-        -- { name = "pos_rsrv", text = "Pos Reservations" },
+        { name = "pos_rsrv", text = "Pos Reservations" },
         { name = "blockers", text = "Splitters", needs_unit = true },
         { name = "vis_graph", text = "Vis Graph", needs_unit = true }
     }

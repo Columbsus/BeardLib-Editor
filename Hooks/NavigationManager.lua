@@ -17,7 +17,7 @@ function NavigationManager:update(t, dt)
 				local options = self._debug_draw_options
 				local progress = self._use_fast_drawing and 1 or math.clamp((t - data.start_t) / (data.duration * 0.5), 0, 1)
 
-				if not self._use_fast_drawing and options.quads then
+				if options.quads then
 					self:_draw_rooms(progress)
 				end
 
@@ -25,7 +25,7 @@ function NavigationManager:update(t, dt)
 					self:_draw_room_boundaries(progress)
 				end
 
-				if not self._use_fast_drawing and options.doors then
+				if options.doors then
 					self:_draw_doors(progress)
 				end
 
@@ -33,7 +33,7 @@ function NavigationManager:update(t, dt)
 					self:_draw_nav_blockers()
 				end
 
-				if not self._use_fast_drawing and options.vis_graph then
+				if options.vis_graph then
 					self:_draw_visibility_groups(progress)
 				end
 
@@ -41,7 +41,7 @@ function NavigationManager:update(t, dt)
 					self:_draw_coarse_graph()
 				end
 
-				if not self._use_fast_drawing and options.nav_links then
+				if options.nav_links then
 					self:_draw_anim_nav_links()
 				end
 
@@ -49,7 +49,7 @@ function NavigationManager:update(t, dt)
 					self:_draw_covers()
 				end
 
-				if not self._use_fast_drawing and options.pos_rsrv then
+				if options.pos_rsrv then
 					self:_draw_pos_reservations(t)
 				end
 
@@ -204,7 +204,7 @@ function NavigationManager:_draw_rooms(progress)
 		room_mask = {}
 
 		for _, i_vis_group in ipairs(self._nav_segments[selected_seg].vis_groups) do
-			local vis_group_rooms = self._visibility_groups[i_vis_group].rooms
+			local vis_group_rooms = self._builder._visibility_groups[i_vis_group].rooms
 
 			for i_room, _ in pairs(vis_group_rooms) do
 				room_mask[i_room] = true
@@ -236,7 +236,7 @@ function NavigationManager:_draw_rooms(progress)
 end
 
 function NavigationManager:_draw_room_boundaries(progress)
-	local rooms = self._rooms
+	local rooms = self._builder._rooms
 	local nav_rooms = {}
 	local selected_seg = self._selected_segment
 	local room_mask
@@ -245,7 +245,7 @@ function NavigationManager:_draw_room_boundaries(progress)
 		room_mask = {}
 
 		for _, i_vis_group in ipairs(self._nav_segments[selected_seg].vis_groups) do
-			local vis_group_rooms = self._visibility_groups[i_vis_group].rooms
+			local vis_group_rooms = self._builder._visibility_groups[i_vis_group].rooms
 
 			for i_room, _ in pairs(vis_group_rooms) do
 				room_mask[i_room] = true
@@ -257,7 +257,7 @@ function NavigationManager:_draw_room_boundaries(progress)
 		local nav_room = {}
 
 		for _, i_vis_group in ipairs(current_segment.vis_groups) do
-			local vis_group_rooms = self._visibility_groups[i_vis_group].rooms
+			local vis_group_rooms = self._builder._visibility_groups[i_vis_group].rooms
 
 			for room_idx, _ in pairs(vis_group_rooms) do
 				table.insert(nav_room, rooms[room_idx])
@@ -512,7 +512,7 @@ function NavigationManager:_draw_doors(progress)
 		room_mask = {}
 
 		for _, i_vis_group in ipairs(self._nav_segments[selected_seg].vis_groups) do
-			local vis_group_rooms = self._visibility_groups[i_vis_group].rooms
+			local vis_group_rooms = self._builder._visibility_groups[i_vis_group].rooms
 
 			for i_room, _ in pairs(vis_group_rooms) do
 				room_mask[i_room] = true
@@ -631,8 +631,8 @@ function NavigationManager:_draw_visibility_groups(progress)
 		return
 	end
 
-	local all_vis_groups = self._visibility_groups
-	local all_rooms = self._rooms
+	local all_vis_groups = self._builder._visibility_groups
+	local all_rooms = self._builder._rooms
 	local builder = self._builder
 	local draw_data = self._draw_data
 	local brush_node = draw_data.brush.vis_graph_node
@@ -675,7 +675,7 @@ end
 function NavigationManager:_draw_coarse_graph()
 	local all_nav_segments = self._nav_segments
 	local all_doors = self._room_doors
-	local all_vis_groups = self._visibility_groups
+	local all_vis_groups = self._builder._visibility_groups
 	local cone_height = Vector3(0, 0, 50)
 
 	for seg_id, seg_data in pairs(all_nav_segments) do
@@ -743,7 +743,7 @@ function NavigationManager:_draw_pos_reservations(t)
 end
 
 function NavigationManager:get_nav_seg_from_i_room( i_room )
-	return self._builder._visibility_groups[ self._rooms[ i_room ].vis_group ].seg
+	return self._builder._visibility_groups[ self._builder._rooms[ i_room ].vis_group ].seg
 end
 
 function NavigationManager:get_nav_seg_from_i_vis_group( i_group )
