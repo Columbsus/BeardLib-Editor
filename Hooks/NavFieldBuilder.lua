@@ -2,6 +2,23 @@ if not Global.editor_mode then
 	return
 end
 
+-- Vanilla NavFieldBuilder:load multiplies the whole door position by grid_size (including z),
+-- but saving only divides x and y back. So every load + save (like "Calculate Selected")
+-- multiplied every untouched door's height by 25, which sends AI flying/falling when they path through doors.
+-- Put the original heights back after loading.
+Hooks:PostHook(NavFieldBuilder, "load", "BLENavFieldBuilderFixDoorZ", function(self, data)
+	if not data or not data.door_low_pos or not self._room_doors then
+		return
+	end
+	for i_door, door in ipairs(self._room_doors) do
+		local low, high = data.door_low_pos[i_door], data.door_high_pos[i_door]
+		if low and high then
+			mvector3.set_z(door.pos, low.z)
+			mvector3.set_z(door.pos1, high.z)
+		end
+	end
+end)
+
 function NavFieldBuilder:_create_build_progress_bar(title, num_divistions)
 	if not self._progress_dialog then
 		local status = BLE.Utils:GetPart("status")
