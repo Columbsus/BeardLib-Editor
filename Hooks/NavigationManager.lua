@@ -187,6 +187,12 @@ function NavigationManager:_draw_nav_obstacles()
 end
 
 Hooks:PreHook(NavigationManager, "set_load_data", "BLENavManagerPreSetLoadData", function(self, data)
+	-- The editor loads the nav twice. In 64-bit, the second load skips the engine setup
+	-- and stacks the nav on top of the first, which breaks the nav mesh.
+	-- If nav is already loaded, clear it first so the engine sets it up fresh.
+	if next(self._nav_segments) then
+		self:_clear()
+	end
 	self._load_data = deep_clone(data)
 	self._builder:load(self._load_data)
 end)
