@@ -463,6 +463,10 @@ function Options:save_nav_data(include, skip_restart)
     local had_include = not not include
     include = include or {}
     local save_data = managers.navigation._load_data or { version = NavFieldBuilder._VERSION }
+    -- Make sure no broken door heights get written to the file
+    if managers.navigation._ble_fix_door_heights then
+        managers.navigation:_ble_fix_door_heights(save_data)
+    end
 
     local save_in_binary = self:Val("SaveMapFilesInBinary")
     local typ = save_in_binary and "binary" or "generic_xml"

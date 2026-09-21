@@ -186,6 +186,58 @@ function NavigationManager:_draw_nav_obstacles()
 	end
 end
 
+-- Door heights (z) should be the average of both quads' floor heights at that end of the door.
+-- The nav builder used to multiply them by 25 on every editor load + save, which makes AI vanish
+-- when they path through doors. Recalculate any door height that doesn't match.
+function NavigationManager:_ble_fix_door_heights(data)
+	if not data or not data.door_low_pos or not data.room_borders_x_pos then
+		return 0
+	end
+
+	local bx_pos, bx_neg = data.room_borders_x_pos, data.room_borders_x_neg
+	local by_pos, by_neg = data.room_borders_y_pos, data.room_borders_y_neg
+	local h_pp, h_pn = data.room_heights_xp_yp, data.room_heights_xp_yn
+	local h_np, h_nn = data.room_heights_xn_yp, data.room_heights_xn_yn
+
+	local function clamp01(v)
+		return v < 0 and 0 or (v > 1 and 1 or v)
+	end
+
+	local function height(q, x, y)
+		local xn, xp, yn, yp = bx_neg[q], bx_pos[q], by_neg[q], by_pos[q]
+		if not (xn and xp and yn and yp and h_pp[q] and h_pn[q] and h_np[q] and h_nn[q]) then
+			return nil
+		end
+		local fx = xp > xn and clamp01((x - xn) / (xp - xn)) or 0
+		local fy = yp > yn and clamp01((y - yn) / (yp - yn)) or 0
+		local lo = h_nn[q] * (1 - fx) + h_pn[q] * fx
+		local hi = h_np[q] * (1 - fx) + h_pp[q] * fx
+		return lo * (1 - fy) + hi * fy
+	end
+
+	local fixed = 0
+	for i, low in pairs(data.door_low_pos) do
+		local high = data.door_high_pos[i]
+		local r1, r2 = data.door_low_rooms[i], data.door_high_rooms[i]
+		if high and r1 and r2 then
+			for _, key in ipairs({"door_low_pos", "door_high_pos"}) do
+				local pos = data[key][i]
+				local h1, h2 = height(r1, pos.x, pos.y), height(r2, pos.x, pos.y)
+				if h1 and h2 then
+					local z = (h1 + h2) / 2
+					-- "not <=" also catches NaN
+					if not (math.abs(pos.z - z) <= 1) then
+						data[key][i] = Vector3(pos.x, pos.y, z)
+						fixed = fixed + 1
+					end
+				end
+			end
+		end
+	end
+
+	return fixed
+end
+
 Hooks:PreHook(NavigationManager, "set_load_data", "BLENavManagerPreSetLoadData", function(self, data)
 	-- The editor loads the nav twice. In 64-bit, the second load skips the engine setup
 	-- and stacks the nav on top of the first, which breaks the nav mesh.
@@ -193,6 +245,13 @@ Hooks:PreHook(NavigationManager, "set_load_data", "BLENavManagerPreSetLoadData",
 	if next(self._nav_segments) then
 		self:_clear()
 	end
+
+	-- Repair door heights broken by older saves, so the editor session and the next save use good data.
+	local fixed = self:_ble_fix_door_heights(data)
+	if fixed > 0 then
+		BLE:log("Fixed %d broken nav door heights. Save the map to keep the fix.", fixed)
+	end
+
 	self._load_data = deep_clone(data)
 	self._builder:load(self._load_data)
 end)
