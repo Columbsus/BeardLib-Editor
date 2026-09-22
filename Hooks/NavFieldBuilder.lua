@@ -19,6 +19,96 @@ Hooks:PostHook(NavFieldBuilder, "load", "BLENavFieldBuilderFixDoorZ", function(s
 	end
 end)
 
+-- 64-bit: nav splitters (slot 15 helper blockers) no longer get physics bodies in the editor,
+-- so the builder's raycasts pass straight through them and one segment floods into the others
+-- (overlapping quads + wrong segment neighbours when building several segments at once).
+-- Emulate the old collision: when an air ray misses, test it against the splitters' boxes.
+local function ble_splitter_box(unit)
+	local rot = unit:rotation()
+	local ax, ay, az = rot:x(), rot:y(), rot:z()
+
+	-- Size from the unit name (e.g. dev_nav_splitter_4x3m), pivot at the bottom corner
+	local ud = unit:unit_data() or {}
+	local w, h
+	for _, name in ipairs({ud.name, ud.name_id}) do
+		if type(name) == "string" then
+			w, h = string.match(name, "(%d+)x(%d+)m")
+			if w then
+				break
+			end
+		end
+	end
+	if w then
+		w, h = tonumber(w) * 100, tonumber(h) * 100
+		return {unit = unit, c = unit:position() + ax * (w * 0.5) + az * (h * 0.5), ax = ax, ay = ay, az = az, hx = w * 0.5, hy = 5, hz = h * 0.5}
+	end
+
+	-- Fallback: the unit's bounding box
+	local oobb = unit.oobb and unit:oobb()
+	if oobb then
+		local size = oobb:size()
+		if size and (size.x > 1 or size.y > 1 or size.z > 1) then
+			return {unit = unit, c = oobb:center(), ax = ax, ay = ay, az = az, hx = size.x * 0.5, hy = size.y * 0.5, hz = size.z * 0.5}
+		end
+	end
+end
+
+Hooks:PreHook(NavFieldBuilder, "start_build_nav_segment", "BLENavSplitterCache", function(self)
+	self._ble_splitters = {}
+	for _, unit in ipairs(World:find_units_quick("all", self._HELPER_SLOT)) do
+		if unit:num_bodies() == 0 then
+			local box = ble_splitter_box(unit)
+			if box then
+				table.insert(self._ble_splitters, box)
+			end
+		end
+	end
+end)
+
+local function ble_segment_hits_box(box, from, to, radius)
+	local dot = mvector3.dot
+	local p0, d = from - box.c, to - from
+	local axes = {box.ax, box.ay, box.az}
+	local half = {box.hx + radius, box.hy + radius, box.hz + radius}
+	local t_min, t_max = 0, 1
+	for i = 1, 3 do
+		local s = dot(p0, axes[i])
+		local v = dot(d, axes[i])
+		if math.abs(v) < 0.0001 then
+			if s < -half[i] or s > half[i] then
+				return nil
+			end
+		else
+			local t1, t2 = (-half[i] - s) / v, (half[i] - s) / v
+			if t1 > t2 then
+				t1, t2 = t2, t1
+			end
+			t_min, t_max = math.max(t_min, t1), math.min(t_max, t2)
+			if t_min > t_max then
+				return nil
+			end
+		end
+	end
+	return t_min
+end
+
+local orig_bundle_ray = NavFieldBuilder._bundle_ray
+function NavFieldBuilder:_bundle_ray(from, to, raycast_radius)
+	local ray = orig_bundle_ray(self, from, to, raycast_radius)
+	if ray or not self._ble_splitters then
+		return ray
+	end
+	for _, box in ipairs(self._ble_splitters) do
+		if alive(box.unit) and box.unit:enabled() then
+			local t = ble_segment_hits_box(box, from, to, raycast_radius)
+			if t then
+				local d = to - from
+				return {unit = box.unit, position = from + d * t, distance = d:length() * t}
+			end
+		end
+	end
+end
+
 function NavFieldBuilder:_create_build_progress_bar(title, num_divistions)
 	if not self._progress_dialog then
 		local status = BLE.Utils:GetPart("status")
