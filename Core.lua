@@ -477,7 +477,7 @@ function BLE:LoadCustomAssetsToHashList(add, directory, package_id)
                         self.DBPaths.object[path] = true
 
                         if package_id then
-                            self.DBPaths[package_id] = self.DBPaths[package_id] or {}
+                            self.DBPackages[package_id] = self.DBPackages[package_id] or {}
                             local package = self.DBPackages[package_id]
                             package.unit = package.unit or {}
                             package.model = package.model or {}
@@ -534,6 +534,7 @@ function BLE:LoadCustomAssetsToHashList(add, directory, package_id)
                     for _, suffix in pairs(CustomPackageManager.TEXTURE_SHORTCUTS[typ]) do
                         self.DBPaths.texture[path..suffix] = true
                         if package_id then
+                            self.DBPackages[package_id] = self.DBPackages[package_id] or {}
                             local package = self.DBPackages[package_id]
                             package.texture = package.texture or {}
                             package.texture[path..suffix] = true
