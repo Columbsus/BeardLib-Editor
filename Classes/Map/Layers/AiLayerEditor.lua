@@ -776,7 +776,6 @@ function AiEditor:_calc_graphs(params)
             local is_person = unit:in_slot(persons)
             local ud = unit:unit_data()
             if unit:name() == self._nav_surface_unit and (build_type == "all" or table.contains(self:selected_units(), unit)) then
-                log(unit:name(), self._nav_surface_unit)
                 table.insert(nav_surfaces, unit)
             elseif is_person or (ud and ud.disable_on_ai_graph) then
                 unit:set_enabled(false)
@@ -851,7 +850,7 @@ function AiEditor:_calc_graphs(params)
             return
         end
 
-        managers.navigation:build_nav_segments(settings, ClassClbk(self, "_graphs_done", params.vis_graph))
+        managers.navigation:build_nav_segments(settings, ClassClbk(self, "_graphs_done", params))
     end)
 end
 
@@ -867,7 +866,7 @@ function AiEditor:reenable_disabled_units()
     self._saved_disabled_units = {}
 end
 
-function AiEditor:_graphs_done(vis_graph)
+function AiEditor:_graphs_done(params)
 	managers.editor:output("Navigation seqments calculated")
 	for _, unit in ipairs(self._saved_disabled_units) do
         if alive(unit) and not unit:in_slot(managers.slot:get_mask("persons")) then
@@ -875,8 +874,8 @@ function AiEditor:_graphs_done(vis_graph)
         end
 	end
 
-	if vis_graph then
-		self:_build_visibility_graph()
+	if params.vis_graph then
+		self:_build_visibility_graph(params.build_type)
 	end
 end
 
