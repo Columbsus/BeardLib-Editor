@@ -390,7 +390,7 @@ function ProjectLevelEditor:save_data()
     local dir = self._parent:get_dir()
 
     if orig_id ~= level_id then -- Level ID has been changed, let's delete the old ID to let the new ID replace it and move the folder.
-        FileIO:MoveTo(Path:Combine(dir, "levels", orig_id), Path:Combine(dir, "levels", level_id))
+        FileIO:MoveTo(Path:Combine(dir, self.LEVELS_DIR, orig_id), Path:Combine(dir, self.LEVELS_DIR, level_id))
         tweak_data.levels[orig_id] = nil
         table.delete(tweak_data.levels._level_index, orig_id)
     end
