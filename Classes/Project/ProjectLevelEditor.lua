@@ -165,6 +165,13 @@ function ProjectLevelEditor:pre_clone_level(create_data)
         packages = type(level.package) == "string" and {level.package} or level.package or {},
         script_data_mods = deep_clone(BLE.MapProject._level_module_template).script_data_mods
     })
+    if level.on_enter_clbks then
+        BLE.Utils:Notify("Warning", string.format([[
+The level %s contains an on_enter_clbks value, these are functions and cannot be stored in XML, therefore they are removed.
+If you wish to restore them, you must setup a hook by yourself.
+        ]], name))
+        level.on_enter_clbks = nil
+    end
     return level, "levels/"..level.world_name .. "/"
 end
 
