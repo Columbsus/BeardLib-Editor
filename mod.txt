@@ -4,6 +4,9 @@
 	"author" : "Luffy, ontrigger",
 	"blt_version" : 2.0,
 	"image" : "Assets/textures/editor_logo.png",
+	"pre_hooks": [
+        {"hook_id" : "core/lib/system/coresystem", "script_path" : "Hooks/CoreSystem.lua"},
+	],
 	"hooks" : [
         {"hook_id" : "lib/utils/levelloadingscreenguiscript", "script_path" : "Hooks/EditorLoadingScreen.lua"},
         {"hook_id" : "core/lib/utils/dev/tools/particle_editor/coreparticleeditorpanel", "script_path" : "Classes/Map/Tools/ParticleEditor/ParticleEditorPanel.lua"},
