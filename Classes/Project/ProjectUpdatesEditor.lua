@@ -16,7 +16,13 @@ function ProjectUpdatesModule:build_menu(menu, data)
     local up = ClassClbk(self, "set_data_callback")
     menu:textbox("Provider", up, data.provider)
     menu:textbox("DownloadId", up, data.id)
-    menu:textbox("Version", up, data.version)
+
+    local version = data.version
+    if tonumber(version) then -- has to be here, xml seems to fuckup numbers.
+        version = math.round_with_precision(tonumber(version), 4)
+    end
+
+    menu:textbox("Version", up, version)
     menu:tickbox("Downloadable", up, data.is_standalone ~= false, {
         text = "Downloadable From CrimeNet",
         help = "Can the level be downloaded by clients connecting? this can only work if the level has no extra dependencies"
