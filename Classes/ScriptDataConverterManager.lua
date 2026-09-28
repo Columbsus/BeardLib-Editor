@@ -203,13 +203,18 @@ function SConverter:BackToRoot(item)
 end
 
 function SConverter:OpenBrowseDialog()
-	BLE.InputDialog:Show({title = "Browse to..", text = "", callback = function(path)
-		path = path:gsub("\\", "/")
-		if FileIO:Exists(path) then
-			self.current_script_path = path
+    local base_path = Path:Normalize(Application:base_path())
+
+    BLE.FBD:Show({
+        where = self.current_script_path:len() > 0 and self.current_script_path or base_path,
+        extensions = {},
+        folder_browser = true,
+        file_click = function(path)
+            self.current_script_path = Path:Normalize(path)
 			self:RefreshFilesAndFolders()
-		end
-	end})
+            BLE.FBD:Hide()
+        end
+    })
 end
 
 function SConverter:FileClick(item)
