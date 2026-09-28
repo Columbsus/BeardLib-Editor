@@ -113,7 +113,7 @@ function BrushLayerEditor:save()
 	end
 
 	local tools_path = Path:Combine(BLE.ModPath, "Tools")
-	local temp_massunit = Path:Combine(tools_path, "Temp/massunit.json")
+	local temp_massunit = Path:Combine(BLE.TempDir, "massunit.json")
 	FileIO:WriteTo(temp_massunit, json.encode(massunit), "w")
 
 	os.execute('start /min '..Path:Combine(tools_path, "MassunitMaker.exe")
