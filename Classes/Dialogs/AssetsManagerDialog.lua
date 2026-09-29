@@ -181,7 +181,7 @@ function AssetsManagerDialog:show_assets()
 			label = "assets",
             used_times = times,
 			disabled_alpha = 0.8,
-			index = (not loaded or unused) and 2 or nil,
+			index = (not loaded or unused or use_tagged) and 2 or nil,
 			enabled = ready,
             background_color = color and color:with_alpha(0.4),
         })
@@ -206,33 +206,34 @@ end
 
 -- Returns all map assets, including ones not loaded by the map's add.xml
 function AssetsManagerDialog:get_all_assets()
-    local assets = {[UNIT] = {}}
+    local all_assets = {[UNIT] = {}}
 
     for unit, _ in pairs(managers.worlddefinition._all_names) do
-        assets[UNIT][unit] = {
+        all_assets[UNIT][unit] = {
             times = self:count_asset_used_times(UNIT, unit)
         }
 	end
 
 	for type, assets in pairs(self._assets) do
-		for name, asset in pairs(assets) do
-            assets[type] = assets[type] or {}
+		for name, node in pairs(assets) do
+            all_assets[type] = all_assets[type] or {}
 
             local times
-            if assets[type][name] then -- If it's in _all_names
-                times = assets[type][name].times
+            if all_assets[type][name] then -- If it's in _all_names
+                times = all_assets[type][name].times
             else
                 times = self:count_asset_used_times(type, name)
             end
-            assets[type][name] = {
-                asset = asset,
+
+            all_assets[type][name] = {
+                asset = node,
                 times = times,
-                used = asset.used
+                used = node.used
             }
         end
     end
 
-    return assets
+    return all_assets
 end
 
 function AssetsManagerDialog:show_packages()
