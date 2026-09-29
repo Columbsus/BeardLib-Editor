@@ -131,6 +131,10 @@ function AssetsManagerDialog:count_asset_used_times(type, name)
     local brush = self:GetPart("world"):get_layer("brush")
     local times = 0
 
+    if type == UNIT and managers.worlddefinition._all_names[name] then
+        times = times + managers.worlddefinition._all_names[name]
+    end
+
     if table.contains(BLE.Brushes, name) then
         times = times + #brush:unit_positions(name)
     end
@@ -154,7 +158,7 @@ function AssetsManagerDialog:show_assets()
         add = self._current_level.add
     end
     local panic
-	local new_asset = function(asset, type, times)
+	local new_asset = function(asset, type, data)
 		local ready = self:asset_ready(type, asset)
         local loaded = self:is_asset_loaded(type, asset)
         if not loaded then
@@ -167,8 +171,9 @@ function AssetsManagerDialog:show_assets()
                 panic = true
             end
         end
-        local unused = type == UNIT and times == 0
-        local use_tagged = type == UNIT and times < 0
+        local times = data.times
+        local unused = not data.used and type == UNIT and times == 0
+        local use_tagged = data.used
         local color = not ready and Color.cyan or not loaded and Color.red or (unused and Color.yellow) or (use_tagged and Color.green) or nil
         units:button(asset, ClassClbk(self, "set_unit_selected"), {
 			asset_type = type,
@@ -176,29 +181,17 @@ function AssetsManagerDialog:show_assets()
 			label = "assets",
             used_times = times,
 			disabled_alpha = 0.8,
-			index = (not loaded or unused or use_tagged) and 2 or nil,
+			index = (not loaded or unused) and 2 or nil,
 			enabled = ready,
             background_color = color and color:with_alpha(0.4),
         })
 	end
 
-    for unit, times in pairs(managers.worlddefinition._all_names) do
-        new_asset(unit, UNIT, times)
-	end
+    local all_assets = self:get_all_assets()
 
-	for type, assets in pairs(self._assets) do
-		for name, asset in pairs(assets) do
-			if type ~= UNIT or not managers.worlddefinition._all_names[name] then
-                local times
-
-                if asset.used then
-                    times =-1
-                else
-                    times = self:count_asset_used_times(type, name)
-                end
-
-				new_asset(name, type, times)
-			end
+	for type, assets in pairs(all_assets) do
+        for name, data in pairs(assets) do
+            new_asset(name, type, data)
 		end
 	end
 
@@ -209,6 +202,37 @@ function AssetsManagerDialog:show_assets()
     if panicked and not panic then
         self:all_ok_dialog()
     end
+end
+
+-- Returns all map assets, including ones not loaded by the map's add.xml
+function AssetsManagerDialog:get_all_assets()
+    local assets = {[UNIT] = {}}
+
+    for unit, _ in pairs(managers.worlddefinition._all_names) do
+        assets[UNIT][unit] = {
+            times = self:count_asset_used_times(UNIT, unit)
+        }
+	end
+
+	for type, assets in pairs(self._assets) do
+		for name, asset in pairs(assets) do
+            assets[type] = assets[type] or {}
+
+            local times
+            if assets[type][name] then -- If it's in _all_names
+                times = assets[type][name].times
+            else
+                times = self:count_asset_used_times(type, name)
+            end
+            assets[type][name] = {
+                asset = asset,
+                times = times,
+                used = asset.used
+            }
+        end
+    end
+
+    return assets
 end
 
 function AssetsManagerDialog:show_packages()
@@ -569,8 +593,8 @@ function AssetsManagerDialog:remove_unused_units_from_map()
     BLE.Utils:YesNoQuestion("This will remove any unused units from your map and remove them from your map assets completely", function()
         for unit, asset in pairs(self._assets.unit) do
             if not asset.used then
-                local count = self:count_asset_used_times("unit", unit)
-                if count == 0 then
+                local times = self:count_asset_used_times("unit", unit)
+                if times == 0 then
                     self:remove_unit_from_map(true, unit, "unit")
                 end
             end
