@@ -127,6 +127,23 @@ function AssetsManagerDialog:asset_ready(type, asset)
 	return self._unready_assets[type] == nil or self._unready_assets[type][asset] == nil
 end
 
+function AssetsManagerDialog:count_asset_used_times(type, name)
+    local brush = self:GetPart("world"):get_layer("brush")
+    local times = 0
+
+    if type == UNIT and managers.worlddefinition._all_names[name] then
+        times = times + managers.worlddefinition._all_names[name]
+    end
+
+    if table.contains(BLE.Brushes, name) then
+        times = times + #brush:unit_positions(name)
+    end
+
+    times = times + managers.mission:count_asset_usage(name)
+
+    return times
+end
+
 function AssetsManagerDialog:show_assets()
     local units = self:GetItem("Assets")
     if not units then
@@ -141,7 +158,7 @@ function AssetsManagerDialog:show_assets()
         add = self._current_level.add
     end
     local panic
-	local new_asset = function(asset, type, times)
+	local new_asset = function(asset, type, data)
 		local ready = self:asset_ready(type, asset)
         local loaded = self:is_asset_loaded(type, asset)
         if not loaded then
@@ -154,13 +171,15 @@ function AssetsManagerDialog:show_assets()
                 panic = true
             end
         end
-        local unused = type == UNIT and times == 0
-        local use_tagged = type == UNIT and times < 0
+        local times = data.times
+        local unused = not data.used and type == UNIT and times == 0
+        local use_tagged = data.used
         local color = not ready and Color.cyan or not loaded and Color.red or (unused and Color.yellow) or (use_tagged and Color.green) or nil
         units:button(asset, ClassClbk(self, "set_unit_selected"), {
 			asset_type = type,
             text = asset.."."..type..(type == "unit" and "("..(ready and (use_tagged and "used") or times or "Copying")..")" or ""),
 			label = "assets",
+            used_times = times,
 			disabled_alpha = 0.8,
 			index = (not loaded or unused or use_tagged) and 2 or nil,
 			enabled = ready,
@@ -168,25 +187,11 @@ function AssetsManagerDialog:show_assets()
         })
 	end
 
-    local brush = self:GetPart("world"):get_layer("brush")
-    local element_units = managers.mission:get_used_units()
-    for unit, times in pairs(managers.worlddefinition._all_names) do
-        new_asset(unit, UNIT, times)
-	end
+    local all_assets = self:get_all_assets()
 
-	for type, assets in pairs(self._assets) do
-		for name, asset in pairs(assets) do
-			if type ~= UNIT or not managers.worlddefinition._all_names[name] then
-                local times = 0
-                if table.contains(BLE.Brushes, name) then
-                    times = #brush:unit_positions(name)
-                elseif element_units and element_units[name] then
-                    times = element_units[name]
-                elseif asset.used then
-                    times = -1
-                end
-				new_asset(name, type, times)
-			end
+	for type, assets in pairs(all_assets) do
+        for name, data in pairs(assets) do
+            new_asset(name, type, data)
 		end
 	end
 
@@ -197,6 +202,38 @@ function AssetsManagerDialog:show_assets()
     if panicked and not panic then
         self:all_ok_dialog()
     end
+end
+
+-- Returns all map assets, including ones not loaded by the map's add.xml
+function AssetsManagerDialog:get_all_assets()
+    local all_assets = {[UNIT] = {}}
+
+    for unit, _ in pairs(managers.worlddefinition._all_names) do
+        all_assets[UNIT][unit] = {
+            times = self:count_asset_used_times(UNIT, unit)
+        }
+	end
+
+	for type, assets in pairs(self._assets) do
+		for name, node in pairs(assets) do
+            all_assets[type] = all_assets[type] or {}
+
+            local times
+            if all_assets[type][name] then -- If it's in _all_names
+                times = all_assets[type][name].times
+            else
+                times = self:count_asset_used_times(type, name)
+            end
+
+            all_assets[type][name] = {
+                asset = node,
+                times = times,
+                used = node.used
+            }
+        end
+    end
+
+    return all_assets
 end
 
 function AssetsManagerDialog:show_packages()
@@ -218,7 +255,7 @@ function AssetsManagerDialog:show_packages()
                 local custom = CustomPackageManager.custom_packages[package:key()] ~= nil
                 local size = not custom and BLE.Utils:GetPackageSize(package)
                 if size or custom then
-                    local text = custom and string.format("%s (custom)", package, size) or string.format("%s(%.3fmb)", package, size)
+                    local text = custom and string.format("%s (custom)", package, size) or string.format("%s(%d+ assets)", package, size)
                     local pkg = packages:divider(package, {text = text, label = "packages"})
                     pkg:tb_imgbtn("RemovePackage", ClassClbk(self, "remove_package", package), nil, BLE.Utils.EditorIcons.cross)
                 end
@@ -291,7 +328,7 @@ function AssetsManagerDialog:find_package(path, typ, dontask, clbk)
 		local items = {}
 
         for _, pkg in pairs(BLE.Utils:GetPackages(path or self._tbl._selected.name, typ or self._tbl._selected.asset_type, true)) do
-            local text = pkg.custom and string.format("%s (custom)", pkg.name) or string.format("%s(%.3fmb)", pkg.name, pkg.package_size)
+            local text = pkg.custom and string.format("%s (custom)", pkg.name) or string.format("%s (%d+ assets)", pkg.name, pkg.package_size)
             table.insert(items, {name = text, package_size = pkg.package_size, package = pkg.name})
 		end
 
@@ -516,7 +553,7 @@ function AssetsManagerDialog:find_packages(missing_assets, clbk)
         local size = BLE.Utils:GetPackageSize(name)
         if size then
             table.insert(items, {
-                name = string.format("%s has %s/%s of the missing assets(%.3fmb)", name, #package, missing_amount, size),
+                name = string.format("%s has %s/%s of the missing assets (package contains %d+ assets)", name, #package, missing_amount, size),
                 package = name,
                 package_size = size,
                 amount = #package,
@@ -555,12 +592,12 @@ end
 
 function AssetsManagerDialog:remove_unused_units_from_map()
     BLE.Utils:YesNoQuestion("This will remove any unused units from your map and remove them from your map assets completely", function()
-        local element_units = managers.mission:get_used_units()
-        local brush = self:GetPart("world"):get_layer("brush")
         for unit, asset in pairs(self._assets.unit) do
-            local brush = table.contains(BLE.Brushes, unit) and #brush:unit_positions(unit) > 0
-            if not managers.worlddefinition._all_names[unit] and not element_units[unit] and not brush and not asset.used then
-                self:remove_unit_from_map(true, unit, "unit")
+            if not asset.used then
+                local times = self:count_asset_used_times("unit", unit)
+                if times == 0 then
+                    self:remove_unit_from_map(true, unit, "unit")
+                end
             end
         end
         self:reload()
@@ -571,7 +608,7 @@ end
 function AssetsManagerDialog:package_report()
     local packages = {}
     for name, package in pairs(BLE.DBPackages) do
-        if not name:begins("all_") and not name:ends("_init") then
+        if not name:ends("_init") then
             if package.unit and not name:find("instances") and not name:find("only") then
                 table.insert(packages, {package = name, name = name})
             end
@@ -844,7 +881,6 @@ function AssetsManagerDialog:set_unit_selected(item)
     local used_tagged
     self._inspect:ClearItems()
     if self._tbl._selected then
-        local element_units = managers.mission:get_used_units()
 		asset = self._tbl._selected.name
 		type = self._tbl._selected.asset_type
         local load_from
@@ -863,13 +899,10 @@ function AssetsManagerDialog:set_unit_selected(item)
         file = self._assets[type] and self._assets[type][asset] or nil
         from_db = file and file.from_db or false
         used_tagged = file and file.used or false
+
         if file then
             load_from = (load_from or "") .. "\n"..(file.from_db and "Database" or "Map Assets")
-            if type == UNIT and not managers.worlddefinition._all_names[asset] and not element_units[asset] then
-                if not table.contains(BLE.Brushes, asset) or not used_tagged or #self:GetPart("world"):get_layer("brush"):unit_positions(asset) == 0 then
-                    unused = true
-                end
-            end
+            unused = item.used_times == 0
         end
         self._inspect:divider("Asset: ".. tostring(BLE.Utils:ShortPath(asset.."."..type, 2)))
         self._inspect:divider("LoadedFrom", {text = "Loaded From: "..(load_from or "Unloaded, please load the asset using one of the methods below")})
@@ -933,7 +966,7 @@ function AssetsManagerDialog:add_package_dialog()
     self._current_level.packages = self._current_level.packages or {}
     local level_packages = self._current_level.packages
     for name in pairs(BLE.DBPackages) do
-        if not table.contains(level_packages, name) and not name:begins("all_") and not name:ends("_init") then
+        if not table.contains(level_packages, name) and not name:ends("_init") then
             table.insert(packages, {package = name, name = name})
         end
     end

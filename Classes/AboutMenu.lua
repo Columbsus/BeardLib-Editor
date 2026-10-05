@@ -114,8 +114,6 @@ function AboutMenu:init()
     for _, v in ipairs(links) do
         link_button(v[1], v[2], links_panel)
     end
-    links_panel:divider("", {size = 1, border_size = 1, border_left = false, border_top = true})
-    link_button("Editor Package Data", "https://modworkshop.net/mod/25270", links_panel)
 
     -- guides panel
     text("Guides & Tutorials:", guides_panel, {size = 24})

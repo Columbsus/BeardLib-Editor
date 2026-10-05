@@ -20,7 +20,7 @@ function EditorCustomSafehouseFilter:_build_panel()
 
 	local tiers = {}
 	for i = 1, #tweak_data.safehouse.prices.rooms do
-		table.insert(tiers, tostring(i))
+		table.insert(tiers, i)
 	end
 	self._tier_box = self:ComboCtrl("room_tier", tiers, {help = "Select a tier from the combobox"})
 	self:ComboCtrl("tier_check", {"current", "highest_unlocked"}, {help = "Select which tier operation to perform"})
@@ -42,7 +42,7 @@ function EditorCustomSafehouseFilter:set_element_data(item)
 		local tiers = {}
 		if num_tiers then
 			for i = 1, num_tiers do
-				table.insert(tiers, i)
+				table.insert(tiers,  i)
 			end
 		end
 		self._tier_box:SetItems(tiers)

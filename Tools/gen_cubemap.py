@@ -53,27 +53,17 @@ def move_and_rename_cubemap(cubemap_name):
     # lazy way to remove .tga
     cubemap_name_new = cubemap_name[:-4] + '.texture'
 
-    new_filename = dir_path / 'temp' / cubemap_name_new
+    new_filename = dir_path / temp / cubemap_name_new
     if not new_filename.exists():
         rename(Path().resolve() / cubemap_name, new_filename)
 
     # remove old cubemap name
-    old_filename = dir_path / 'temp' / cubemap_name
+    old_filename = dir_path / temp / cubemap_name
     if old_filename.exists():
         print('removing old filename', old_filename)
         remove(old_filename)
 
     sys.exit(0)
-
-
-# this script is called from lua by execute() with an absolute path,
-# meaning that I have to make every filename have an absolute path too
-def fix_paths(output_arg):
-    output_paths = []
-    if output_arg:
-        output_paths = ["-o", str(dir_path / 'temp' / output_arg)]
-    return output_paths
-
 
 def start_process(proc_path, input):
     input.insert(0, proc_path)
@@ -93,15 +83,13 @@ def start_process(proc_path, input):
 def convert_cubemaps(output_path, argtype):
     args = ['-m']
     if argtype == "reflect":
-        args += ['10', '-f', 'BC1_UNORM', '-y']
+        args += ['10', '-f', 'BC1_UNORM']
     elif argtype == "light":
-        args += ['8', '-f', 'BC3_UNORM', '-y']
+        args += ['8', '-f', 'BC3_UNORM']
     elif argtype == "dome_occ":
-        args += ['1', '-f', 'BC1_UNORM', '-y']
+        args += ['1', '-f', 'BC1_UNORM']
 
-    # for some reason it always fails to write if I specify output
-    output_path.remove("-o")
-    args.extend(output_path)
+    args.extend(["-o", str(dir_path / temp), '-y', output_path])
     start_process(texconv_path, args)
 
 
@@ -109,7 +97,7 @@ def generate_cubemaps(files, output_path, argtype):
     if argtype == "dome_occ":
         return
 
-    s = ["cube", *files, *output_path, '-y']
+    s = ["cube", *files, "-o", output_path, '-y']
     # s.extend(["-w", str(cube_res), "-h", str(cube_res)])
     start_process(texass_path, s)
 
@@ -132,7 +120,7 @@ if __name__ == "__main__":
     argtype, in_files, out_file = get_args()
     logging.basicConfig(filename=dir_path / "cubemapgen.log", level=logging.INFO)
 
-    cubemap_path = fix_paths(out_file)
+    cubemap_path = str(dir_path / temp / out_file)
     print('CUBEMAP PATH', cubemap_path)
     print('IN PATH', in_files)
 

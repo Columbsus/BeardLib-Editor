@@ -314,7 +314,20 @@ function EnvLayer:build_menu()
 		-- List of light object strings that you can build cubelights off of:
 		-- LI_SMALL, LO_OMNI, LO_OMNI_1, LO_OMNI_2, LO_LIGHT_FLICKER, LS_LIGHT, LS_LIGHT_1, LS_LIGHT_2, LS_LIGHT_3, LS_LIGHT_4, LS_LAMP
 		-- sometimes refuses to build cubelights off of some objects, unsure as to why
-		local lights = self:selected_unit() and self:selected_unit():get_object(Idstring("li_small")) or self:selected_unit():get_object(Idstring("lo_omni")) or self:selected_unit():get_object(Idstring("lo_omni_1")) or self:selected_unit():get_object(Idstring("lo_omni_2")) or self:selected_unit():get_object(Idstring("lo_light_flicker")) or self:selected_unit():get_object(Idstring("ls_light")) or self:selected_unit():get_object(Idstring("ls_light_1")) or self:selected_unit():get_object(Idstring("ls_light_2")) or self:selected_unit():get_object(Idstring("ls_light_3")) or self:selected_unit():get_object(Idstring("ls_light_4")) or self:selected_unit():get_object(Idstring("ls_lamp")) or self:selected_unit():get_object(Idstring("ls_spot")) or nil
+		local su = self:selected_unit()
+		local lights = su and (su:get_object(Idstring("li_small"))
+			or su:get_object(Idstring("lo_omni"))
+			or su:get_object(Idstring("lo_omni_1"))
+			or su:get_object(Idstring("lo_omni_2"))
+			or su:get_object(Idstring("lo_light_flicker"))
+			or su:get_object(Idstring("ls_light"))
+			or su:get_object(Idstring("ls_light_1"))
+			or su:get_object(Idstring("ls_light_2"))
+			or su:get_object(Idstring("ls_light_3"))
+			or su:get_object(Idstring("ls_light_4"))
+			or su:get_object(Idstring("ls_lamp"))
+			or su:get_object(Idstring("ls_spot")) or nil)
+
 		if not lights then
 			BLE.Utils:YesNoQuestion("No lights were selected. Would you like to build projection lights for all lights in the level?",
 			function()
@@ -335,7 +348,6 @@ function EnvLayer:build_menu()
     self._draw_env_units = environment_group:tickbox("EnvironmentUnits", ClassClbk(self, "set_draw_env_units"), true, {text = "Draw"})
     environment_group:tickbox("OverkillCubemapTools", ClassClbk(self, "set_option"), self:Val("OverkillCubemapTools"), {
         help = "Use the cubemap tools overkill uses. They're slower, however they look more accurate to what the real editor would generate.",
-		enabled = false
     })
 
 	local dome_occ = self._holder:group("DomeOcclusion", {visible = true})

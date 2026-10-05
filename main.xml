@@ -9,7 +9,6 @@
 		core_class="Core.lua"
 	>
     <AssetUpdates provider="github" custom_name="GitHub Update" branch="master" id="Luffyyy/BeardLib-Editor" dont_delete="true"/>
-    <AssetUpdates id="25270" provider="modworkshop" custom_name="Data Files" folder_name="Data" install_directory="$ModPath$" name="DataFilesUpdate"/>
     <load_first Options="true"/>
     <Classes directory="Classes">
 		<class file="Utils.lua"/>
@@ -285,7 +284,6 @@
         <unit_obj path="units/civilian_element/element"/>
         <unit_obj path="units/player_element/element"/>
         <unit_obj path="units/enemy_element/element"/>
-        <unit_obj path="units/dev_tools/level_tools/ai_coverpoint"/>
 
         <unit_obj path="core/units/environment_area/environment_area"/>
         <unit_obj path="core/units/dome_occ_shape/dome_occ_shape"/>
@@ -295,10 +293,6 @@
         <unit_obj path="core/units/sound_area_emitter/sound_area_emitter"/>
         <unit_obj path="core/units/portal_shape/portal_shape"/>
         <unit_obj path="core/units/cubemap_gizmo/cubemap_gizmo"/>
-        <unit_obj path="core/units/patrol_point/patrol_point"/>
-
-        <unit path="core/units/nav_surface/nav_surface"/>
-        <object path="core/units/nav_surface/nav_surface"/>
     </AddFiles>
     <MissionElements>
         <!--Custom Elements-->

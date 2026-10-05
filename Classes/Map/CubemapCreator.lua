@@ -316,18 +316,6 @@ function CubemapCreator:_create_cube_map()
 
 	self._cube_counter = self._cube_counter + 1
 
-	--[[if self._params.spot then
-		if self._cube_counter == 1 then
-			self:_create_spot_projection()
-		elseif self._cube_counter == 2 then
-			self:_generate_spot_projection()
-		else
-			self:_cubemap_done()
-		end
-
-		return true
-	end]]
-
 	if self._cube_counter == 1 then
         self._camera:set_rotation(Rotation(Vector3(0, 0, 1), Vector3(0, -1, 0)))
         self._wait_frames = 50
@@ -623,9 +611,7 @@ function CubemapCreator:_cubemap_done()
 end
 
 function CubemapCreator:_generate_cubemap(file)
-	-- TODO: allow using the old generation script because
-	-- the ovk one is slow as shit
-	local ovk = true --self._params.dome_occ ~= nil or self:value("OverkillCubemapTools")
+	local ovk = self._params.dome_occ ~= nil or self:value("OverkillCubemapTools")
 	log("Using overkill tools?", tostring(ovk))
 	local exe_path = ovk and (encase_quotemarks(
 		Path:Combine(Application:base_path(), BLE.ModPath, "Tools", "cubemap_"..file .. ".bat")
@@ -663,16 +649,8 @@ function CubemapCreator:_generate_cubemap(file)
 	end
 end
 
-function CubemapCreator:_generate_spot_projection() -- Not implemented yet
-	local exe_path = self._gen_path .. " light -i "
-	exe_path = exe_path .. self._params.source_path .. self._name_ordered[1] .. " "
-	exe_path = exe_path .. "-o " .. self._params.output_name .. ".dds "
-	os.execute(exe_path)
-	self:_move_output(self._params.output_path)
-end
-
 function CubemapCreator:_move_output(output_path)
-	local ovk = true -- self._params.dome_occ ~= nil or self:value("OverkillCubemapTools")
+	local ovk = self._params.dome_occ ~= nil or self:value("OverkillCubemapTools")
 	local output_temp = self._params.output_name .. (ovk and ".dds" or ".texture")
 	local output = self._params.output_name .. ".texture"
 	local final_path = Path:Combine(self._params.output_path, output)
